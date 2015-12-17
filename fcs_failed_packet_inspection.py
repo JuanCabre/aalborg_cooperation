@@ -1,11 +1,6 @@
 import pyshark
 import pandas as pd
 import numpy as np
-import timeit
-import os
-
-
-
 
 # Some constants
 
@@ -15,20 +10,10 @@ import os
 TOTAL_BITS = 10000
 AP_MAC = '58:6d:8f:d3:5e:70'
 
-
 # ## Loading the captured packets
 
 # In[4]:
-
-# file = 'test_capture.pcapng'
-# file = 'gvsp.pcapng'
-# file = 'bigger test.pcapng'
-# file = 'test_for_weekend.pcapng'
-# file = '30-11-15_54mbps_1mw.pcapng'
-# file = '2015-12-04_17_25.pcapng' # Testing automated measurements
-# file = '2015-12-07_11_51.pcapng' # Test across the rooms
-# file = '2015-12-09_14_36_60mw_manymbps.pcapng' # First automated test
-file = '2015-12-09_17_12_60mw_all_nightmbps.pcapng' # Big automated
+file = '2015-12-09_18_33_60mw_all_night2mbps.pcapng' # Big automated
 # file = '2015-12-09_18_33_60mw_all_night2mbps.pcapng' # ALL NIGHT!
 
 cap = pyshark.FileCapture(file)
@@ -47,7 +32,7 @@ data = []
 data_rate = []
 rssi = []
 tx_mac = []
-is_broken = []
+time_rel = []
 # for pkt in broken_pkts:
 for pkt in cap:
     if pkt.wlan.fcs_bad == '1':
@@ -78,9 +63,9 @@ for pkt in cap:
             data_rate.pop()
             rssi.pop()
             continue
-        # CRC failed
+        # Relative time
         try:
-            is_broken.append(bool(pkt.wlan.fcs_bad))
+            time_rel.append(pkt.frame_info.time_relative)
         except:
             data.pop()
             data_rate.pop()
@@ -88,7 +73,8 @@ for pkt in cap:
             tx_mac.pop()
             continue
 
-fields={'Data':data,'Data_rate':data_rate,'RSSI':rssi,'Tx_mac':tx_mac,'Broken':is_broken}
+
+fields={'Data':data,'Data_rate':data_rate,'RSSI':rssi,'Tx_mac':tx_mac,'Time':time_rel}
 p_data = pd.DataFrame(fields)
 # ==========
 
@@ -126,6 +112,6 @@ p_data['Flipped_bits'] = p_data['Data_bin'].apply(lambda x: x.count('1'))
 # ==========
 
 # Save DF
-p_data.to_msgpack('test.msg')
+p_data.to_msgpack('output.msg')
 # ==========
 
