@@ -13,70 +13,29 @@ AP_MAC = '58:6d:8f:d3:5e:70'
 # ## Loading the captured packets
 
 # In[4]:
-file = '2015-12-09_18_33_60mw_all_night2mbps.pcapng' # Big automated
-# file = '2015-12-09_18_33_60mw_all_night2mbps.pcapng' # ALL NIGHT!
+# file = '2015-12-09_17_12_60mw_all_nightmbps.pcapng' # Big automated
+file = '2015-12-09_18_33_60mw_all_night2mbps.pcapng' # ALL NIGHT!
 
 cap = pyshark.FileCapture(file)
 
 
-# ## Extracting information
+p_data = pd.DataFrame(columns=['Data','Data_rate','RSSI','Tx_mac','Time'])
 
-# ### Filter the CRC broken packets
-
-# We use pandas to build the data frame with some usefull columns:
-
-# In[ ]:
-
-# Broken data as a string
-data = []
-data_rate = []
-rssi = []
-tx_mac = []
-time_rel = []
-# for pkt in broken_pkts:
+i = 0
 for pkt in cap:
     if pkt.wlan.fcs_bad == '1':
-# for pkt in pkts:
-        # Data
         try:
-            data.append(pkt.data.data.replace(':',''))
-        except(AttributeError):
-            continue
-        # Data rate
-        try:
-            data_rate.append(float(pkt.radiotap.datarate))
+            data = pkt.data.data.replace(':','')
+            data_rate = np.float16(pkt.radiotap.datarate)
+            rssi = int(pkt.radiotap.dbm_antsignal)
+            tx_mac = pkt.wlan.ta
+            time_rel = pkt.frame_info.time_relative
+            
+            p_data.loc[i] = [data,data_rate,rssi,tx_mac,time_rel]
+            i +=1
         except:
-            data.pop()
-            continue
-        # RSSI
-        try:
-            rssi.append(int(pkt.radiotap.dbm_antsignal))
-        except:
-            data.pop()
-            data_rate.pop()
-            continue
-        # Transmitter MAC Address
-        try:
-            tx_mac.append(pkt.wlan.ta)
-        except:
-            data.pop()
-            data_rate.pop()
-            rssi.pop()
-            continue
-        # Relative time
-        try:
-            time_rel.append(pkt.frame_info.time_relative)
-        except:
-            data.pop()
-            data_rate.pop()
-            rssi.pop()
-            tx_mac.pop()
             continue
 
-
-fields={'Data':data,'Data_rate':data_rate,'RSSI':rssi,'Tx_mac':tx_mac,'Time':time_rel}
-p_data = pd.DataFrame(fields)
-# ==========
 
 # Add a column stating if the AP sent the packet
 p_data['AP_pkt'] = p_data['Tx_mac'].apply(lambda x: x == '58:6d:8f:d3:5e:70')
